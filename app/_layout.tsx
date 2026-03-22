@@ -31,13 +31,10 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="settings"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="payment-methods" />
+        <Stack.Screen name="ibans" />
+        <Stack.Screen name="investments" />
       </Stack>
     </>
   );

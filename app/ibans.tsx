@@ -5,13 +5,15 @@ import {
   Platform,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../src/contexts/AuthContext';
-import { useTheme } from '../../src/contexts/ThemeContext';
-import { getUserIbans, addIban, updateIban, deleteIban } from '../../src/lib/database';
-import GenericModal from '../../src/components/GenericModal';
+import { useAuth } from '../src/contexts/AuthContext';
+import { useTheme } from '../src/contexts/ThemeContext';
+import { getUserIbans, addIban, updateIban, deleteIban } from '../src/lib/database';
+import GenericModal from '../src/components/GenericModal';
 
 export default function IbansScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const { isDark, colors } = useTheme();
 
@@ -100,6 +102,7 @@ export default function IbansScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}><Ionicons name="chevron-back" size={26} color={colors.accent} /></TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>IBAN Bilgileri</Text>
         <TouchableOpacity onPress={() => openModal()} style={[styles.addBtn, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
           <Ionicons name="add" size={24} color={colors.accentText} />
@@ -202,7 +205,8 @@ export default function IbansScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 20, paddingBottom: 16 },
+  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '800' },
   addBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
