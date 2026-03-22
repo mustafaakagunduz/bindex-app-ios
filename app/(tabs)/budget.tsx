@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, ActivityIndicator,
-  StyleSheet, SafeAreaView, ActionSheetIOS, Alert, Platform,
-  TextInput, Modal, FlatList,
+  StyleSheet, SafeAreaView, Alert,
+  TextInput, Modal, Animated,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
@@ -212,25 +213,6 @@ export default function BudgetScreen() {
     loadAll();
   };
 
-  // ─── Long press action ─────────────────────────────────────────────────────
-  const handleLongPress = (entry: any) => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['İptal', 'Düzenle', 'Sil'], cancelButtonIndex: 0, destructiveButtonIndex: 2, title: entry.title },
-        (idx) => {
-          if (idx === 1) openModal(entry.type, entry);
-          if (idx === 2) confirmDelete(entry);
-        }
-      );
-    } else {
-      Alert.alert(entry.title, '', [
-        { text: 'İptal', style: 'cancel' },
-        { text: 'Düzenle', onPress: () => openModal(entry.type, entry) },
-        { text: 'Sil', style: 'destructive', onPress: () => confirmDelete(entry) },
-      ]);
-    }
-  };
-
   const confirmDelete = (entry: any) => {
     Alert.alert('Emin misiniz?', `"${entry.title}" silinecek.`, [
       { text: 'İptal', style: 'cancel' },
@@ -285,21 +267,42 @@ export default function BudgetScreen() {
     const isIncome = entry.type === 'income';
     const barColor = isIncome ? '#22c55e' : (entry.expense_type === 'optional' ? '#ec4899' : '#3b82f6');
 
+    const renderRightActions = () => (
+      <View style={styles.swipeActions}>
+        <TouchableOpacity
+          onPress={() => openModal(entry.type, entry)}
+          style={[styles.swipeBtn, { backgroundColor: '#3b82f6' }]}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="pencil" size={18} color="#fff" />
+          <Text style={styles.swipeBtnTxt}>Düzenle</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => confirmDelete(entry)}
+          style={[styles.swipeBtn, { backgroundColor: '#ef4444' }]}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="trash" size={18} color="#fff" />
+          <Text style={styles.swipeBtnTxt}>Sil</Text>
+        </TouchableOpacity>
+      </View>
+    );
+
     return (
-      <TouchableOpacity
-        onLongPress={() => handleLongPress(entry)}
-        activeOpacity={0.7}
-        style={[styles.entryRow, { backgroundColor: isDark ? 'rgba(24,24,27,0.5)' : 'rgba(255,255,255,0.7)', borderColor: isDark ? 'rgba(63,63,70,0.3)' : 'rgba(229,231,235,0.5)' }]}
-      >
-        <View style={[styles.entryBar, { backgroundColor: barColor }]} />
-        <View style={styles.entryContent}>
-          <Text style={[styles.entryTitle, { color: colors.text }]} numberOfLines={1}>{entry.title}</Text>
-          {entry.category && <Text style={[styles.entryCat, { color: colors.textMuted }]}>{entry.category}</Text>}
+      <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
+        <View
+          style={[styles.entryRow, { backgroundColor: isDark ? 'rgba(24,24,27,0.5)' : 'rgba(255,255,255,0.7)', borderColor: isDark ? 'rgba(63,63,70,0.3)' : 'rgba(229,231,235,0.5)' }]}
+        >
+          <View style={[styles.entryBar, { backgroundColor: barColor }]} />
+          <View style={styles.entryContent}>
+            <Text style={[styles.entryTitle, { color: colors.text }]} numberOfLines={1}>{entry.title}</Text>
+            {entry.category && <Text style={[styles.entryCat, { color: colors.textMuted }]}>{entry.category}</Text>}
+          </View>
+          <Text style={[styles.entryAmount, { color: isIncome ? '#22c55e' : '#ef4444' }]}>
+            {isIncome ? '+' : '-'}{fmt(parseFloat(entry.amount))} ₺
+          </Text>
         </View>
-        <Text style={[styles.entryAmount, { color: isIncome ? '#22c55e' : '#ef4444' }]}>
-          {isIncome ? '+' : '-'}{fmt(parseFloat(entry.amount))} ₺
-        </Text>
-      </TouchableOpacity>
+      </Swipeable>
     );
   };
 
@@ -409,12 +412,12 @@ export default function BudgetScreen() {
             {isExpenseTab && (
               <TouchableOpacity
                 onPress={() => {
-                  if (Platform.OS === 'ios') {
-                    ActionSheetIOS.showActionSheetWithOptions(
-                      { options: ['İptal', 'Varsayılan', 'Ödeme Yöntemine Göre', 'Zorunluluğa Göre'], cancelButtonIndex: 0 },
-                      (idx) => { if (idx === 1) setGroupBy('default'); if (idx === 2) setGroupBy('paymentMethod'); if (idx === 3) setGroupBy('expenseType'); }
-                    );
-                  }
+                  Alert.alert('Gruplama', 'Nasıl gruplandırılsın?', [
+                    { text: 'İptal', style: 'cancel' },
+                    { text: 'Varsayılan', onPress: () => setGroupBy('default') },
+                    { text: 'Ödeme Yöntemine Göre', onPress: () => setGroupBy('paymentMethod') },
+                    { text: 'Zorunluluğa Göre', onPress: () => setGroupBy('expenseType') },
+                  ]);
                 }}
                 style={[styles.groupBtn, { backgroundColor: isDark ? 'rgba(63,63,70,0.4)' : 'rgba(229,231,235,0.6)', borderColor: isDark ? 'rgba(63,63,70,0.4)' : 'rgba(209,213,219,0.5)' }]}
                 activeOpacity={0.7}
@@ -520,7 +523,10 @@ const styles = StyleSheet.create({
   emptyTxt: { fontSize: 15 },
   dateGroup: { marginBottom: 16 },
   dateLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, marginLeft: 2 },
-  entryRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, marginBottom: 6, overflow: 'hidden', paddingRight: 12 },
+  entryRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, marginBottom: 6, overflow: 'hidden', paddingRight: 12, backgroundColor: 'transparent' },
+  swipeActions: { flexDirection: 'row', marginBottom: 6, borderRadius: 12, overflow: 'hidden' },
+  swipeBtn: { width: 72, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8 },
+  swipeBtnTxt: { color: '#fff', fontSize: 11, fontWeight: '600' },
   entryBar: { width: 4, alignSelf: 'stretch' },
   entryContent: { flex: 1, paddingVertical: 12, paddingLeft: 12 },
   entryTitle: { fontSize: 14, fontWeight: '500' },
